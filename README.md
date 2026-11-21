@@ -15,8 +15,21 @@ per Export/Import in den Einstellungen.
 - **Fehler**, **Markiert**, **Markiert lernen** (in Runden), **Ultra schwer**.
 - Ähnliche Fragen: Unterschiede markiert, in Tests ausgeblendet.
 - Erklärung, Merkhilfe und Verwechslungsgefahr nach jeder Antwort.
-- Export/Import im selben JSON-Format wie die Web-App, App-Log zum Exportieren,
-  Zurücksetzen, Nachtflug- und Tag-Design.
+- **Stand übertragen** zwischen Geräten, ohne Server: Teilen (Link + Code), Code kopieren
+  und auf dem anderen Gerät einfügen, oder als JSON-Datei (gleiches Format wie die Web-App).
+  Vor dem Übernehmen zeigt die App beide Stände nebeneinander.
+- App-Log zum Exportieren, Zurücksetzen, dunkles und helles Design.
+
+### Stand zwischen Geräten übertragen
+
+Startseite → **Stand übertragen**:
+
+- **Senden:** „Teilen …“ (z. B. per AirDrop/Nachricht an dich selbst) oder „Kopieren“.
+  Der Code beginnt mit `POF1-` und ist ca. 4.000 Zeichen lang (komprimiert).
+- **Empfangen:** Link öffnen *oder* „Einfügen aus Zwischenablage“ / Code ins Feld /
+  Datei wählen. Danach „Übernehmen“. Der Stand auf dem Gerät wird ersetzt.
+- iPhone: Safari und die App auf dem Home-Bildschirm haben getrennten Speicher. Für die
+  Home-Bildschirm-App den Code **in der App** einfügen, nicht den Link in Safari öffnen.
 
 Beim ersten Start wird der PoF-Stand aus `data/seed-progress.json` übernommen
 (Schnappschuss von `pilot-prep-hub/src/data/current.json`). Aktualisieren:
@@ -102,6 +115,7 @@ dx serve --platform desktop
 | `src/logic.rs` | Blöcke, Tests, Wiederholungen, Überraschungsfragen |
 | `src/card.rs` | Fragekarte mit Antworten und Erklärung |
 | `src/main.rs` | Startseite, Modi, Liste, Block-Ansicht, Einstellungen |
+| `src/transfer.rs` | Stand übertragen: Code, Link, Datei, Bestätigung |
 | `src/util.rs` | Zeit, Zufall, Speicher (localStorage / Datei), App-Log |
 | `assets/style.css` | Design |
 | `data/` | PoF-Fragen + Startstand (aus der Web-App erzeugt) |

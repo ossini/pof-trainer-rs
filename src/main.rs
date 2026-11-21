@@ -4,6 +4,7 @@ mod card;
 mod icons;
 mod logic;
 mod model;
+mod transfer;
 mod util;
 
 use card::{Badge, QuestionCard};
@@ -11,6 +12,7 @@ use dioxus::prelude::*;
 use icons::{pick, Icon};
 use model::{question, questions, AppProgress, DrillState, Mode, SubjectProgress, Variant, SUBJECT};
 use serde_json::json;
+use transfer::{ImportConfirm, Transfer};
 use util::{applog, applog::log, store};
 
 const CSS: Asset = asset!("/assets/style.css");
@@ -76,24 +78,8 @@ fn to_progress(s: &AppState) -> AppProgress {
     AppProgress {
         subjects: [(SUBJECT.to_string(), s.p.clone())].into_iter().collect(),
         theme: s.theme.clone(),
+        exported_at: None,
     }
-}
-
-fn import(mut app: Signal<AppState>, text: &str) -> Result<String, String> {
-    let ap: AppProgress = serde_json::from_str(text).map_err(|e| format!("Datei unlesbar: {e}"))?;
-    let theme = ap.theme.clone();
-    let p = ap
-        .subjects
-        .get(SUBJECT)
-        .cloned()
-        .ok_or_else(|| "In der Datei ist kein Principles-of-Flight-Fortschritt.".to_string())?;
-    log("progress.import", json!({ "summary": summary(&p) }));
-    let msg = format!("Importiert: {} beantwortet, {} markiert.", p.answered.len(), p.favorites.len());
-    let mut a = app.write();
-    a.p = p;
-    a.theme = if theme == "light" { "light".into() } else { "dark".into() };
-    a.gen += 1;
-    Ok(msg)
 }
 
 /// JS string literal
@@ -128,11 +114,21 @@ fn copy_text(content: &str) {
 
 // ---------------------------------------------------------------------- app
 
+#[derive(Clone, Copy, PartialEq)]
+enum Sheet {
+    None,
+    Settings,
+    Transfer,
+}
+
 #[component]
 fn App() -> Element {
     let app = use_context_provider(|| Signal::new(load_initial()));
+    // a state opened via link (#stand=…) waits for confirmation
+    use_context_provider(|| Signal::new(transfer::take_link_code()));
     let mut screen = use_signal(|| None::<Mode>); // None = start screen
-    let mut settings = use_signal(|| false);
+    let mut sheet = use_signal(|| Sheet::None);
+    let mut notice = use_signal(|| None::<String>);
 
     // Save every change on the device
     use_effect(move || {
@@ -146,12 +142,13 @@ fn App() -> Element {
     });
 
     let theme = app.read().theme.clone();
+    let theme_color = pick(theme == "light", "#f5f6f8", "#111317");
 
     rsx! {
         document::Stylesheet { href: CSS }
         document::Title { "PoF Trainer" }
         document::Meta { name: "viewport", content: "width=device-width, initial-scale=1, viewport-fit=cover" }
-        document::Meta { name: "theme-color", content: if theme == "light" { "#f3efe6" } else { "#070b14" } }
+        document::Meta { name: "theme-color", content: theme_color }
         div { class: "app", "data-theme": "{theme}",
             {match screen() {
                 None => rsx! {
@@ -160,7 +157,8 @@ fn App() -> Element {
                             log("nav.mode", json!({ "mode": format!("{m:?}") }));
                             screen.set(Some(m));
                         },
-                        on_settings: move |_| settings.set(true),
+                        on_settings: move |_| sheet.set(Sheet::Settings),
+                        on_transfer: move |_| sheet.set(Sheet::Transfer),
                     }
                 },
                 Some(mode) => rsx! {
@@ -171,12 +169,32 @@ fn App() -> Element {
                             screen.set(Some(m));
                         },
                         on_back: move |_| screen.set(None),
-                        on_settings: move |_| settings.set(true),
+                        on_settings: move |_| sheet.set(Sheet::Settings),
                     }
                 },
             }}
-            if settings() {
-                Settings { on_close: move |_| settings.set(false) }
+            {match sheet() {
+                Sheet::Settings => rsx! {
+                    Settings {
+                        on_close: move |_| sheet.set(Sheet::None),
+                        on_transfer: move |_| sheet.set(Sheet::Transfer),
+                    }
+                },
+                Sheet::Transfer => rsx! { Transfer { on_close: move |_| sheet.set(Sheet::None) } },
+                Sheet::None => rsx! {},
+            }}
+            ImportConfirm {
+                on_done: move |msg: String| {
+                    sheet.set(Sheet::None);
+                    notice.set(Some(msg));
+                    spawn(async move {
+                        util::sleep_ms(2500).await;
+                        notice.set(None);
+                    });
+                },
+            }
+            if let Some(msg) = notice() {
+                div { class: "notice", Icon { name: "check" } span { "{msg}" } }
             }
         }
     }
@@ -184,36 +202,8 @@ fn App() -> Element {
 
 // ------------------------------------------------------------- start screen
 
-fn ring_svg(ok: f64, bad: f64) -> String {
-    let c = 2.0 * std::f64::consts::PI * 52.0;
-    let (lo, lb) = (c * ok, c * bad);
-    // tick marks like an instrument dial
-    let ticks: String = (0..60)
-        .map(|i| {
-            let a = i as f64 * 6.0_f64.to_radians();
-            let (r1, r2) = (64.0, if i % 5 == 0 { 58.0 } else { 61.0 });
-            format!(
-                r#"<line x1="{:.1}" y1="{:.1}" x2="{:.1}" y2="{:.1}"/>"#,
-                70.0 + r1 * a.sin(),
-                70.0 - r1 * a.cos(),
-                70.0 + r2 * a.sin(),
-                70.0 - r2 * a.cos()
-            )
-        })
-        .collect();
-    format!(
-        r#"<svg viewBox="0 0 140 140" aria-hidden="true">
-        <g class="ticks">{ticks}</g>
-        <circle class="track" cx="70" cy="70" r="52"/>
-        <circle class="arc-ok" cx="70" cy="70" r="52" stroke-dasharray="{lo:.2} {c:.2}" transform="rotate(-90 70 70)"/>
-        <circle class="arc-bad" cx="70" cy="70" r="52" stroke-dasharray="{lb:.2} {c:.2}" stroke-dashoffset="{:.2}" transform="rotate(-90 70 70)"/>
-        </svg>"#,
-        -lo
-    )
-}
-
 #[component]
-fn Home(on_open: EventHandler<Mode>, on_settings: EventHandler<()>) -> Element {
+fn Home(on_open: EventHandler<Mode>, on_settings: EventHandler<()>, on_transfer: EventHandler<()>) -> Element {
     let app = use_app();
     let a = app.read();
     let p = &a.p;
@@ -221,81 +211,89 @@ fn Home(on_open: EventHandler<Mode>, on_settings: EventHandler<()>) -> Element {
     let correct = p.correct_count();
     let wrong = p.wrong_answered();
     let answered = p.answered.len();
-    let fav = p.favorites.len();
-    let ultra = p.ultra_hard.len();
     let pct = if total > 0 { correct * 100 / total } else { 0 };
     let rate = if answered > 0 { correct * 100 / answered } else { 0 };
-    let open = total - correct;
-    let ring = ring_svg(correct as f64 / total.max(1) as f64, wrong as f64 / total.max(1) as f64);
+    let ok_w = format!("{:.1}", correct as f64 * 100.0 / total.max(1) as f64);
+    let bad_w = format!("{:.1}", wrong as f64 * 100.0 / total.max(1) as f64);
     let block_info = match &p.all_drill {
-        Some(d) if !d.queue.is_empty() => format!("Block {} · noch {} Fragen im Block", d.block, d.queue.len()),
-        Some(d) => format!("Block {} ist fertig – weiter geht's", d.block),
-        None => "Starte mit dem ersten 10er-Block".to_string(),
+        Some(d) if !d.queue.is_empty() => format!("Block {} · noch {} Fragen", d.block, d.queue.len()),
+        Some(d) => format!("Block {} fertig · weiter mit dem nächsten", d.block),
+        None => "Erster 10er-Block".to_string(),
     };
 
-    let tiles: [(Mode, &'static str, &'static str, &'static str, String); 5] = [
+    let rows: [(Mode, &'static str, &'static str, &'static str, String); 5] = [
         (Mode::List, "list", "Liste", "Alle Fragen der Reihe nach", format!("{answered}/{total}")),
         (Mode::Errors, "alert", "Fehler", "Falsch beantwortete Fragen", wrong.to_string()),
-        (Mode::Favorites, "bookmark", "Markiert", "Deine Lesezeichen", fav.to_string()),
+        (Mode::Favorites, "bookmark", "Markiert", "Deine Lesezeichen", p.favorites.len().to_string()),
         (Mode::FavoritesDrill, "repeat", "Markiert lernen", "Lesezeichen in Blöcken", String::new()),
-        (Mode::UltraHard, "gem", "Ultra schwer", "Die richtig fiesen", ultra.to_string()),
+        (Mode::UltraHard, "gem", "Ultra schwer", "Die richtig fiesen", p.ultra_hard.len().to_string()),
     ];
 
     rsx! {
         header { class: "topbar",
-            div { class: "brand",
-                span { class: "logo", Icon { name: "plane" } }
-                div {
-                    div { class: "brand-title", "PoF Trainer" }
-                    div { class: "brand-sub", "PPL(A) · Principles of Flight" }
-                }
+            div { class: "top-title start",
+                div { class: "brand-title", "PoF Trainer" }
+                div { class: "brand-sub", "Principles of Flight" }
             }
             button { class: "iconbtn", "aria-label": "Einstellungen", onclick: move |_| on_settings.call(()), Icon { name: "settings" } }
         }
 
         main { class: "page home",
-            section { class: "panel hero",
-                div { class: "dial",
-                    div { class: "dial-svg", dangerous_inner_html: ring }
-                    div { class: "dial-center",
-                        div { class: "dial-value", "{pct}" span { class: "unit", "%" } }
-                        div { class: "dial-label", "sitzt" }
-                    }
+            section { class: "card summary",
+                div { class: "sum-head",
+                    span { class: "big", "{pct}%" }
+                    span { class: "muted", "{correct} von {total} sitzen" }
                 }
-                div { class: "stats",
-                    div { class: "stat", div { class: "v", "{answered}" } div { class: "l", "beantwortet" } }
-                    div { class: "stat ok", div { class: "v", "{correct}" } div { class: "l", "richtig" } }
-                    div { class: "stat bad", div { class: "v", "{wrong}" } div { class: "l", "falsch" } }
-                    div { class: "stat", div { class: "v", "{rate}%" } div { class: "l", "Trefferquote" } }
+                div { class: "meter",
+                    span { class: "meter-ok", style: "width: {ok_w}%" }
+                    span { class: "meter-bad", style: "width: {bad_w}%" }
+                }
+                div { class: "nums",
+                    div { div { class: "n", "{answered}" } div { class: "l", "beantwortet" } }
+                    div { div { class: "n ok", "{correct}" } div { class: "l", "richtig" } }
+                    div { div { class: "n bad", "{wrong}" } div { class: "l", "falsch" } }
+                    div { div { class: "n", "{rate}%" } div { class: "l", "Quote" } }
                 }
             }
 
             button { class: "cta", onclick: move |_| on_open.call(Mode::Blocks),
-                span { class: "cta-icon", Icon { name: "layers" } }
                 span { class: "cta-text",
                     span { class: "cta-title", "Weiterlernen" }
                     span { class: "cta-sub", "{block_info}" }
                 }
-                span { class: "cta-meta", "{open} offen" }
                 Icon { name: "next" }
             }
 
-            div { class: "tiles",
-                for (mode, icon, title, sub, count) in tiles {
+            div { class: "list",
+                for (mode, icon, title, sub, count) in rows {
                     button {
-                        class: if mode == Mode::UltraHard { "tile ultra" } else { "tile" },
+                        class: "list-row",
                         onclick: move |_| on_open.call(mode),
-                        span { class: "tile-icon", Icon { name: icon } }
-                        span { class: "tile-title", "{title}" }
-                        span { class: "tile-sub", "{sub}" }
-                        if !count.is_empty() {
-                            span { class: "tile-count mono", "{count}" }
+                        span { class: if mode == Mode::UltraHard { "row-icon ultra" } else { "row-icon" }, Icon { name: icon } }
+                        span { class: "row-text",
+                            span { class: "row-title", "{title}" }
+                            span { class: "row-sub", "{sub}" }
                         }
+                        if !count.is_empty() {
+                            span { class: "row-count", "{count}" }
+                        }
+                        span { class: "chev", Icon { name: "next" } }
                     }
                 }
             }
 
-            p { class: "foot", "{total} Fragen · alles bleibt auf diesem Gerät · Viel Erfolg bei der Prüfung ✈" }
+            div { class: "list",
+                button { class: "list-row", onclick: move |_| on_transfer.call(()),
+                    span { class: "row-icon", Icon { name: "upload" } }
+                    span { class: "row-text",
+                        span { class: "row-title", "Stand übertragen" }
+                        span { class: "row-sub", "Auf ein anderes Gerät – ohne Server" }
+                    }
+                    span { class: "chev", Icon { name: "next" } }
+                }
+            }
+
+            p { class: "foot", "Gespeichert nur auf diesem Gerät" }
         }
     }
 }
@@ -724,16 +722,13 @@ fn use_offline_status() -> (bool, String) {
 }
 
 #[component]
-fn Settings(on_close: EventHandler<()>) -> Element {
+fn Settings(on_close: EventHandler<()>, on_transfer: EventHandler<()>) -> Element {
     let mut app = use_app();
     let mut status = use_signal(|| None::<(bool, String)>);
     let mut confirm_reset = use_signal(|| false);
-    let mut paste = use_signal(String::new);
     let theme = app.read().theme.clone();
 
     let (offline_ok, offline_text) = use_offline_status();
-
-    let export_text = move || serde_json::to_string_pretty(&to_progress(&app.peek())).unwrap_or_default();
 
     rsx! {
         div { class: "sheet-backdrop", onclick: move |_| on_close.call(()),
@@ -750,60 +745,15 @@ fn Settings(on_close: EventHandler<()>) -> Element {
                 section {
                     h3 { "Darstellung" }
                     div { class: "seg wide",
-                        button { class: if theme == "dark" { "on" } else { "" }, onclick: move |_| app.write().theme = "dark".into(), Icon { name: "moon" } "Nachtflug" }
-                        button { class: if theme == "light" { "on" } else { "" }, onclick: move |_| app.write().theme = "light".into(), Icon { name: "sun" } "Tag" }
+                        button { class: if theme == "dark" { "on" } else { "" }, onclick: move |_| app.write().theme = "dark".into(), Icon { name: "moon" } "Dunkel" }
+                        button { class: if theme == "light" { "on" } else { "" }, onclick: move |_| app.write().theme = "light".into(), Icon { name: "sun" } "Hell" }
                     }
                 }
 
                 section {
-                    h3 { "Daten übertragen" }
-                    p { class: "hint", "Der Fortschritt liegt nur auf diesem Gerät. Exportiere ihn als Sicherung oder um ihn auf ein anderes Gerät zu holen (gleiches Format wie die Web-App)." }
-                    div { class: "row",
-                        button { class: "btn", onclick: move |_| {
-                            save_file(&format!("pof-progress-{}.json", util::today()), "application/json", &export_text());
-                            log("progress.export", json!({}));
-                            status.set(Some((true, "Export erstellt.".into())));
-                        }, Icon { name: "download" } "Exportieren" }
-                        button { class: "btn", onclick: move |_| {
-                            copy_text(&export_text());
-                            status.set(Some((true, "In die Zwischenablage kopiert.".into())));
-                        }, Icon { name: "copy" } "Kopieren" }
-                    }
-                    label { class: "btn file",
-                        Icon { name: "upload" }
-                        "Datei importieren"
-                        input {
-                            r#type: "file",
-                            accept: ".json,application/json",
-                            onchange: move |evt: FormEvent| async move {
-                                let Some(files) = evt.files() else { return };
-                                for name in files.files() {
-                                    match files.read_file_to_string(&name).await {
-                                        Some(text) => status.set(Some(match import(app, &text) {
-                                            Ok(m) => (true, m),
-                                            Err(e) => (false, e),
-                                        })),
-                                        None => status.set(Some((false, "Die Datei konnte nicht gelesen werden.".into()))),
-                                    }
-                                }
-                            },
-                        }
-                    }
-                    details { class: "paste",
-                        summary { "…oder JSON einfügen" }
-                        textarea {
-                            placeholder: "{{\"subjects\": …}}",
-                            value: "{paste}",
-                            oninput: move |e| paste.set(e.value()),
-                        }
-                        button { class: "btn", disabled: paste.read().trim().is_empty(), onclick: move |_| {
-                            let text = paste.peek().clone();
-                            status.set(Some(match import(app, &text) {
-                                Ok(m) => { paste.set(String::new()); (true, m) }
-                                Err(e) => (false, e),
-                            }));
-                        }, Icon { name: "upload" } "Einfügen & importieren" }
-                    }
+                    h3 { "Stand übertragen" }
+                    p { class: "hint", "Alles wird nur lokal auf diesem Gerät gespeichert. Zum Sichern oder für ein anderes Gerät:" }
+                    button { class: "btn wide", onclick: move |_| on_transfer.call(()), Icon { name: "upload" } "Stand übertragen …" }
                 }
 
                 section {

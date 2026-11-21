@@ -96,6 +96,7 @@ pub fn QuestionCard(
     rsx! {
         div { class: "{card_class}",
             div { class: "qhead",
+                div { class: "qmeta",
                 span { class: "chip mono", {caa_id} }
                 span { class: "qnum", "{number} / {total}" }
                 {match badge {
@@ -104,7 +105,8 @@ pub fn QuestionCard(
                     Some(Badge::Retry) => rsx! { span { class: "badge b-retry", Icon { name: "retry" } "Wiederholung" } },
                     None => rsx! {},
                 }}
-                div { class: "spacer" }
+                }
+                div { class: "qactions",
                 button {
                     class: if is_ultra { "iconbtn ultra on" } else { "iconbtn ultra" },
                     title: "ULTRA SCHWER",
@@ -117,6 +119,7 @@ pub fn QuestionCard(
                     "aria-label": if is_fav { "Markierung entfernen" } else { "Frage markieren" },
                     onclick: move |_| toggle_favorite(app, qid),
                     Icon { name: pick(is_fav, "bookmark-fill", "bookmark") }
+                }
                 }
             }
 

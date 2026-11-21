@@ -156,6 +156,9 @@ pub struct AppProgress {
     pub subjects: BTreeMap<String, SubjectProgress>,
     #[serde(default = "dark")]
     pub theme: String,
+    /// set on export, shown when importing on another device
+    #[serde(default, rename = "exportedAt", skip_serializing_if = "Option::is_none")]
+    pub exported_at: Option<String>,
 }
 
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]

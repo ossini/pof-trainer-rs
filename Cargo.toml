@@ -9,9 +9,11 @@ description = "PPL Trainer – Principles of Flight (offline, Fortschritt bleibt
 dioxus = { version = "=0.6.3", features = [] }
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
+miniz_oxide = "0.8"
+base64 = "0.22"
 
 [target.'cfg(target_arch = "wasm32")'.dependencies]
-web-sys = { version = "0.3", features = ["Window", "Storage", "console"] }
+web-sys = { version = "0.3", features = ["Window", "Storage", "Location", "console"] }
 js-sys = "0.3"
 gloo-timers = { version = "0.3", features = ["futures"] }
 
