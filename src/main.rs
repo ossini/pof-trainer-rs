@@ -62,7 +62,13 @@ fn load_initial() -> AppState {
                 log("progress.load", json!({ "source": "device", "summary": summary(&s.p) }));
                 return s;
             }
-            None => log("progress.load.failed", json!({ "source": "device" })),
+            None => {
+                // Never lose it: the seed loaded below would overwrite the saved
+                // state on the next save, so keep the unreadable text aside.
+                let key = format!("{STORAGE_KEY}-unlesbar-{}", util::iso_from_ms(util::now_ms()));
+                store::set(&key, &text);
+                log("progress.load.failed", json!({ "source": "device", "keptAs": key, "chars": text.len() }));
+            }
         }
     }
     let s = serde_json::from_str::<AppProgress>(SEED)
