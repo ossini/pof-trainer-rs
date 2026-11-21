@@ -8,7 +8,7 @@ mod util;
 
 use card::{Badge, QuestionCard};
 use dioxus::prelude::*;
-use icons::Icon;
+use icons::{pick, Icon};
 use model::{question, questions, AppProgress, DrillState, Mode, SubjectProgress, Variant, SUBJECT};
 use serde_json::json;
 use util::{applog, applog::log, store};
@@ -311,6 +311,13 @@ fn Learn(mode: Mode, on_mode: EventHandler<Mode>, on_back: EventHandler<()>, on_
     };
     let qcount = questions().len();
     let active = if mode == Mode::List { Mode::Blocks } else { mode };
+    let count_class = |m: Mode| -> &'static str {
+        match m {
+            Mode::UltraHard => "count ultra",
+            Mode::Errors => "count bad",
+            _ => "count",
+        }
+    };
     let tabs: [(Mode, &'static str, &'static str, usize); 5] = [
         (Mode::Blocks, "layers", "Alle", 0),
         (Mode::Errors, "alert", "Fehler", errors),
@@ -336,7 +343,7 @@ fn Learn(mode: Mode, on_mode: EventHandler<Mode>, on_back: EventHandler<()>, on_
                     Icon { name: icon }
                     span { "{label}" }
                     if count > 0 {
-                        span { class: if m == Mode::UltraHard { "count ultra" } else if m == Mode::Errors { "count bad" } else { "count" }, "{count}" }
+                        span { class: count_class(m), "{count}" }
                     }
                 }
             }
@@ -429,6 +436,18 @@ fn ListView(mode: Mode) -> Element {
         }
     };
 
+    let qn_class = |n: usize, id: u32| -> &'static str {
+        if n == i {
+            "qn cur"
+        } else {
+            match answered.get(&id) {
+                Some(true) => "qn ok",
+                Some(false) if mode == Mode::List => "qn bad",
+                _ => "qn",
+            }
+        }
+    };
+
     rsx! {
         div { class: "page learn",
             tabindex: "-1",
@@ -460,7 +479,7 @@ fn ListView(mode: Mode) -> Element {
                     button {
                         key: "{id}",
                         id: "qn-{n}",
-                        class: if n == i { "qn cur" } else if answered.get(&id) == Some(&true) { "qn ok" } else if mode == Mode::List && answered.get(&id) == Some(&false) { "qn bad" } else { "qn" },
+                        class: qn_class(n, id),
                         onclick: move |_| set_index(app, local, mode, n),
                         "{label}"
                     }
@@ -804,7 +823,7 @@ fn Settings(on_close: EventHandler<()>) -> Element {
                 section {
                     h3 { "Offline" }
                     div { class: if offline_ok { "offline ok" } else { "offline" },
-                        Icon { name: if offline_ok { "check" } else { "alert" } }
+                        Icon { name: pick(offline_ok, "check", "alert") }
                         span { "{offline_text}" }
                     }
                 }

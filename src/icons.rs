@@ -37,6 +37,12 @@ fn paths(name: &str) -> &'static str {
     }
 }
 
+/// `if c { a } else { b }` for static strings. Inside `rsx!`, an inline `if`
+/// turns string literals into `String`s, which `&'static str` props reject.
+pub fn pick(c: bool, a: &'static str, b: &'static str) -> &'static str {
+    if c { a } else { b }
+}
+
 pub fn svg(name: &str) -> String {
     format!(
         r#"<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">{}</svg>"#,

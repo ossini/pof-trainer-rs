@@ -1,7 +1,7 @@
 //! One question: header with markers, text (look-alike parts highlighted),
 //! shuffled answers, explanation and – in block modes – a "Weiter" button.
 
-use crate::icons::Icon;
+use crate::icons::{pick, Icon};
 use crate::model::question;
 use crate::util::{applog::log, shuffle_answers};
 use crate::{use_app, AppState};
@@ -110,13 +110,13 @@ pub fn QuestionCard(
                     title: "ULTRA SCHWER",
                     "aria-label": if is_ultra { "ULTRA SCHWER entfernen" } else { "Als ULTRA SCHWER markieren" },
                     onclick: move |_| toggle_ultra(app, qid),
-                    Icon { name: if is_ultra { "gem-fill" } else { "gem" } }
+                    Icon { name: pick(is_ultra, "gem-fill", "gem") }
                 }
                 button {
                     class: if is_fav { "iconbtn fav on" } else { "iconbtn fav" },
                     "aria-label": if is_fav { "Markierung entfernen" } else { "Frage markieren" },
                     onclick: move |_| toggle_favorite(app, qid),
-                    Icon { name: if is_fav { "bookmark-fill" } else { "bookmark" } }
+                    Icon { name: pick(is_fav, "bookmark-fill", "bookmark") }
                 }
             }
 
@@ -149,7 +149,7 @@ pub fn QuestionCard(
 
             if let Some(prev) = preanswered {
                 div { class: if prev { "prev ok" } else { "prev bad" },
-                    Icon { name: if prev { "check" } else { "x" } }
+                    Icon { name: pick(prev, "check", "x") }
                     if prev { "Schon richtig beantwortet" } else { "Zuletzt falsch beantwortet" }
                 }
             }
