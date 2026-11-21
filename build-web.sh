@@ -15,8 +15,6 @@ OUT=$(find target/dx -type d -path '*release/web/public' | head -n1)
 rm -rf dist
 cp -r "$OUT" dist
 cp pwa/manifest.webmanifest pwa/icon-180.png pwa/icon-192.png pwa/icon-512.png dist/
-sed "s/__BUILD__/$(date +%Y%m%d%H%M%S)/" pwa/sw.js > dist/sw.js
-
 python3 - dist/index.html <<'EOF'
 import sys
 p = sys.argv[1]
@@ -38,6 +36,22 @@ if "apple-mobile-web-app-capable" not in html:
     html = html.replace("</head>", head + "</head>", 1)
 html = html.replace("<html>", '<html lang="de">', 1)
 open(p, "w", encoding="utf-8").write(html)
+EOF
+
+# Service worker with the list of every file to keep offline
+python3 - dist pwa/sw.js <<'EOF'
+import json, sys, time
+from pathlib import Path
+dist, src = Path(sys.argv[1]), Path(sys.argv[2])
+files = ["./"] + sorted(
+    "./" + p.relative_to(dist).as_posix()
+    for p in dist.rglob("*")
+    if p.is_file() and p.name not in ("sw.js", "404.html") and not p.name.startswith(".")
+)
+sw = src.read_text(encoding="utf-8")
+sw = sw.replace("__BUILD__", time.strftime("%Y%m%d%H%M%S")).replace("__FILES__", json.dumps(files, indent=1))
+(dist / "sw.js").write_text(sw, encoding="utf-8")
+print(f"Offline-Cache: {len(files)} Dateien")
 EOF
 
 echo "Fertig: $(pwd)/dist"

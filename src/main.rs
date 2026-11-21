@@ -660,6 +660,50 @@ fn DrillView(variant: Variant) -> Element {
 
 // ----------------------------------------------------------------- settings
 
+/// Web: asks the service worker whether every file is cached, so you know
+/// before take-off that the app works in flight mode.
+#[cfg(target_arch = "wasm32")]
+fn use_offline_status() -> (bool, String) {
+    const JS: &str = r#"
+        const sw = navigator.serviceWorker;
+        if (!sw || !sw.controller) return { ready: false, reason: 'nosw' };
+        return await new Promise((resolve) => {
+          const timer = setTimeout(() => resolve({ ready: false, reason: 'timeout' }), 4000);
+          sw.addEventListener('message', function handler(e) {
+            if (e.data && e.data.type === 'offline-status') {
+              clearTimeout(timer);
+              sw.removeEventListener('message', handler);
+              resolve(e.data);
+            }
+          });
+          sw.controller.postMessage('offline-status');
+        });"#;
+    let status = use_resource(|| async { document::eval(JS).await.ok() });
+    let value = status.read().clone();
+    match value {
+        None => (false, "Prüfe Offline-Speicher …".into()),
+        Some(None) => (false, "Offline-Status unbekannt.".into()),
+        Some(Some(v)) => {
+            if v["ready"].as_bool() == Some(true) {
+                let n = v["files"].as_u64().unwrap_or(0);
+                (true, format!("Offline bereit – alle {n} Dateien sind auf dem Gerät. Funktioniert im Flugmodus."))
+            } else if v["reason"].as_str() == Some("nosw") {
+                (false, "Noch nicht offline bereit. Öffne die App einmal mit Internet, schließe sie und starte sie neu.".into())
+            } else if let Some(m) = v["missing"].as_u64() {
+                (false, format!("Lädt noch – {m} Dateien fehlen. Kurz mit Internet offen lassen."))
+            } else {
+                (false, "Offline-Status unbekannt – App mit Internet neu starten.".into())
+            }
+        }
+    }
+}
+
+/// Native app: everything is built in.
+#[cfg(not(target_arch = "wasm32"))]
+fn use_offline_status() -> (bool, String) {
+    (true, "Alles ist in der App enthalten – läuft komplett offline.".into())
+}
+
 #[component]
 fn Settings(on_close: EventHandler<()>) -> Element {
     let mut app = use_app();
@@ -667,6 +711,8 @@ fn Settings(on_close: EventHandler<()>) -> Element {
     let mut confirm_reset = use_signal(|| false);
     let mut paste = use_signal(String::new);
     let theme = app.read().theme.clone();
+
+    let (offline_ok, offline_text) = use_offline_status();
 
     let export_text = move || serde_json::to_string_pretty(&to_progress(&app.peek())).unwrap_or_default();
 
@@ -752,6 +798,14 @@ fn Settings(on_close: EventHandler<()>) -> Element {
                             applog::clear();
                             status.set(Some((true, "Log geleert.".into())));
                         }, Icon { name: "trash" } "Log leeren" }
+                    }
+                }
+
+                section {
+                    h3 { "Offline" }
+                    div { class: if offline_ok { "offline ok" } else { "offline" },
+                        Icon { name: if offline_ok { "check" } else { "alert" } }
+                        span { "{offline_text}" }
                     }
                 }
 

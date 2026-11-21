@@ -79,6 +79,15 @@ Einmalig in den Repo-Einstellungen unter *Settings → Pages → Source* **GitHu
 Liegt die Seite anderswo in einem Unterordner, vorher in `Dioxus.toml` unter `[web.app]`
 `base_path = "<ordner>"` eintragen (der Workflow macht das für Pages selbst).
 
+### Offline (Flugmodus)
+
+- **Native App:** Alles ist in der App enthalten, sie läuft immer offline.
+- **Web-App:** Beim ersten Öffnen mit Internet lädt der Service Worker *alle* Dateien
+  (Liste beim Build erzeugt) auf das iPhone. Danach kommt alles aus dem Cache, auch im
+  Flugmodus. Ein WLAN mit Login-Seite (Flugzeug, Hotel) kann die App nicht überschreiben.
+  Unter **Einstellungen → Offline** steht, ob alles da ist („Offline bereit“).
+  Am besten vor dem Flug einmal mit Internet öffnen: So kommen auch Updates aufs Gerät.
+
 ### Desktop (zum schnellen Testen)
 
 ```bash

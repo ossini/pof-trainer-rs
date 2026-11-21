@@ -1,10 +1,20 @@
 // Offline cache for the home-screen app. The progress itself is NOT here –
 // it lives in localStorage on the device and is never sent anywhere.
+//
+// Every file of the build is downloaded at install time (list filled in by
+// build-web.sh), and everything is served from the cache afterwards, so the
+// app works in flight mode right after the first visit and a captive-portal
+// page (plane / hotel Wi-Fi) can never replace it. Updates arrive as a new
+// sw.js; it only takes over once all its files were downloaded completely.
 const CACHE = 'pof-trainer-__BUILD__';
+const FILES = __FILES__;
 
 self.addEventListener('install', (event) => {
-  event.waitUntil(caches.open(CACHE).then((c) => c.addAll(['./', './index.html', './manifest.webmanifest'])));
-  self.skipWaiting();
+  event.waitUntil(
+    caches.open(CACHE)
+      .then((c) => c.addAll(FILES.map((f) => new Request(f, { cache: 'reload' }))))
+      .then(() => self.skipWaiting())
+  );
 });
 
 self.addEventListener('activate', (event) => {
@@ -19,28 +29,30 @@ self.addEventListener('fetch', (event) => {
   const req = event.request;
   if (req.method !== 'GET' || new URL(req.url).origin !== location.origin) return;
 
-  // Pages: network first (to get updates), cache when offline
-  if (req.mode === 'navigate') {
-    event.respondWith(
-      fetch(req)
-        .then((res) => {
-          const copy = res.clone();
-          caches.open(CACHE).then((c) => c.put('./index.html', copy));
-          return res;
-        })
-        .catch(() => caches.match('./index.html'))
-    );
-    return;
-  }
+  event.respondWith((async () => {
+    const cache = await caches.open(CACHE);
+    // App start / reload: always the cached page of this version
+    if (req.mode === 'navigate') {
+      const page = await cache.match('./index.html');
+      if (page) return page;
+    }
+    const hit = await cache.match(req, { ignoreSearch: true });
+    if (hit) return hit;
+    try {
+      return await fetch(req);
+    } catch (e) {
+      return (await cache.match('./index.html')) || Response.error();
+    }
+  })());
+});
 
-  // Everything else (hashed wasm/js/css): cache first
-  event.respondWith(
-    caches.match(req).then((hit) => hit || fetch(req).then((res) => {
-      if (res.ok) {
-        const copy = res.clone();
-        caches.open(CACHE).then((c) => c.put(req, copy));
-      }
-      return res;
-    }))
-  );
+// The app asks whether everything is stored for offline use
+self.addEventListener('message', (event) => {
+  if (event.data !== 'offline-status') return;
+  event.waitUntil((async () => {
+    const cache = await caches.open(CACHE);
+    const missing = [];
+    for (const f of FILES) if (!(await cache.match(f))) missing.push(f);
+    event.source.postMessage({ type: 'offline-status', ready: missing.length === 0, files: FILES.length, missing: missing.length });
+  })());
 });
