@@ -359,9 +359,23 @@ fn Learn(mode: Mode, on_mode: EventHandler<Mode>, on_back: EventHandler<()>, on_
             }
         }
         {match mode {
-            Mode::Blocks => rsx! { DrillView { key: "all-{gen}", variant: Variant::All } },
-            Mode::FavoritesDrill => rsx! { DrillView { key: "fav-{gen}", variant: Variant::Favorites } },
-            m => rsx! { ListView { key: "{m:?}-{gen}", mode: m } },
+            // Dioxus only honours `key` inside a list, hence the one-item
+            // loops: a new key must give a fresh view with fresh state.
+            Mode::Blocks => rsx! {
+                for k in std::iter::once(format!("all-{gen}")) {
+                    DrillView { key: "{k}", variant: Variant::All }
+                }
+            },
+            Mode::FavoritesDrill => rsx! {
+                for k in std::iter::once(format!("fav-{gen}")) {
+                    DrillView { key: "{k}", variant: Variant::Favorites }
+                }
+            },
+            m => rsx! {
+                for k in std::iter::once(format!("{m:?}-{gen}")) {
+                    ListView { key: "{k}", mode: m }
+                }
+            },
         }}
     }
 }
@@ -452,6 +466,9 @@ fn ListView(mode: Mode) -> Element {
         }
     };
 
+    let on_answer = EventHandler::new(on_answer);
+    let card_key = format!("{mode:?}-{qid}-{i}");
+
     rsx! {
         div { class: "page learn",
             tabindex: "-1",
@@ -462,14 +479,17 @@ fn ListView(mode: Mode) -> Element {
                     set_index(app, local, mode, i + 1);
                 }
             },
-            QuestionCard {
-                key: "{mode:?}-{qid}-{i}",
-                qid,
-                salt: 0,
-                number: i + 1,
-                total: len,
-                preanswered,
-                on_answer,
+            // fresh card (no old selection / answer order) for every question
+            for k in std::iter::once(card_key) {
+                QuestionCard {
+                    key: "{k}",
+                    qid,
+                    salt: 0,
+                    number: i + 1,
+                    total: len,
+                    preanswered,
+                    on_answer,
+                }
             }
         }
         footer { class: "strip-bar",
@@ -655,6 +675,11 @@ fn DrillView(variant: Variant) -> Element {
         }
     };
 
+    let on_answer = EventHandler::new(on_answer);
+    let on_next = EventHandler::new(on_next);
+    let card_key = format!("drill-{item_id}-{step}");
+    let (is_surprise, is_test) = (item.surprise, item.test);
+
     rsx! {
         div { class: "page learn",
             div { class: "blockbar",
@@ -664,18 +689,21 @@ fn DrillView(variant: Variant) -> Element {
                 }
                 div { class: "bar", div { class: "bar-fill", style: "width: {pct}%" } }
             }
-            QuestionCard {
-                key: "drill-{item_id}-{step}",
-                qid: item_id,
-                salt: step,
-                number,
-                total: total as usize,
-                on_answer,
-                badge,
-                surprise: item.surprise,
-                hide_similar: item.test,
-                on_next: Some(EventHandler::new(on_next)),
-                next_label,
+            // fresh card for every step, also when the same question repeats
+            for k in std::iter::once(card_key) {
+                QuestionCard {
+                    key: "{k}",
+                    qid: item_id,
+                    salt: step,
+                    number,
+                    total: total as usize,
+                    on_answer,
+                    badge,
+                    surprise: is_surprise,
+                    hide_similar: is_test,
+                    on_next: Some(on_next),
+                    next_label: next_label.clone(),
+                }
             }
         }
     }

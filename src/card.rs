@@ -62,6 +62,9 @@ pub fn QuestionCard(
     let shuffled = use_hook(move || question(qid).map(|q| shuffle_answers(q, salt)));
     let mut selected = use_signal(|| None::<usize>);
     let mut show_explain = use_signal(|| false);
+    // only answers from before this card opened count as "earlier" (the
+    // answer given here updates the progress right away)
+    let preanswered = use_hook(move || preanswered);
 
     let (Some(q), Some(sh)) = (question(qid), shuffled) else {
         return rsx! {};
