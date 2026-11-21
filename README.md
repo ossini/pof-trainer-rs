@@ -72,8 +72,12 @@ Den Ordner `dist/` auf einen beliebigen HTTPS-Host legen (z. B. GitHub Pages),
 auf dem iPhone in Safari öffnen → Teilen → **Zum Home-Bildschirm**. Danach startet sie
 wie eine App und läuft offline. Gespeichert wird in `localStorage` auf dem iPhone.
 
-Liegt die Seite in einem Unterordner (z. B. `https://<name>.github.io/pof-trainer/`),
-vorher in `Dioxus.toml` unter `[web.app]` `base_path = "pof-trainer"` eintragen.
+**GitHub Pages (automatisch):** Jeder Push auf `main` baut die Web-App und veröffentlicht
+sie unter `https://ossini.github.io/pof-trainer-rs/` (`.github/workflows/pages.yml`).
+Einmalig in den Repo-Einstellungen unter *Settings → Pages → Source* **GitHub Actions** wählen.
+
+Liegt die Seite anderswo in einem Unterordner, vorher in `Dioxus.toml` unter `[web.app]`
+`base_path = "<ordner>"` eintragen (der Workflow macht das für Pages selbst).
 
 ### Desktop (zum schnellen Testen)
 
