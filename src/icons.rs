@@ -6,6 +6,7 @@ fn paths(name: &str) -> &'static str {
     match name {
         "back" => r#"<path d="m15 18-6-6 6-6"/>"#,
         "next" => r#"<path d="m9 18 6-6-6-6"/>"#,
+        "down" => r#"<path d="m6 9 6 6 6-6"/>"#,
         "settings" => r#"<path d="M4 6h10M18 6h2M4 12h4M12 12h8M4 18h12M20 18h0"/><circle cx="16" cy="6" r="2"/><circle cx="10" cy="12" r="2"/><circle cx="18" cy="18" r="2"/>"#,
         "bookmark" => r#"<path d="m19 21-7-4-7 4V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16z"/>"#,
         "bookmark-fill" => r#"<path fill="currentColor" d="m19 21-7-4-7 4V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16z"/>"#,

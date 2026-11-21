@@ -95,7 +95,6 @@ pub fn QuestionCard(
     let segments = similar.as_ref().and_then(|s| s.segments.clone());
     let qtext = q.question.clone();
     let caa_id = q.caa_id.clone();
-    let cheer = CHEERS[qid as usize % CHEERS.len()];
 
     rsx! {
         div { class: "{card_class}",
@@ -190,33 +189,7 @@ pub fn QuestionCard(
             }
 
             if show_explain() {
-                if let Some(ex) = q.explanation.clone() {
-                    div { class: "sheet-backdrop", onclick: move |_| show_explain.set(false),
-                        div { class: "sheet explain-sheet", onclick: move |e| e.stop_propagation(),
-                            div { class: "sheet-head",
-                                h2 { class: if correct_now == Some(true) { "ex-title ok" } else { "ex-title" },
-                                    Icon { name: "bulb" }
-                                    if correct_now == Some(true) { "{cheer}" } else { "KI-Erklärung" }
-                                }
-                                button { class: "iconbtn", "aria-label": "Schließen", onclick: move |_| show_explain.set(false), Icon { name: "close" } }
-                            }
-                            p { class: "ex-why", {ex.why} }
-                            if let Some(tip) = ex.tip {
-                                div { class: "ex-box",
-                                    h3 { "Merkhilfe" }
-                                    p { {tip} }
-                                }
-                            }
-                            if let Some(twin) = ex.twin {
-                                div { class: "ex-box",
-                                    h3 { "Verwechslungsgefahr" }
-                                    p { {twin} }
-                                }
-                            }
-                            button { class: "btn wide", onclick: move |_| show_explain.set(false), "Schließen" }
-                        }
-                    }
-                }
+                ExplainSheet { qid, correct: correct_now == Some(true), on_close: move |_| show_explain.set(false) }
             }
 
             if let Some(next) = on_next {
@@ -236,6 +209,43 @@ pub fn QuestionCard(
                         Icon { name: "next" }
                     }
                 }
+            }
+        }
+    }
+}
+
+/// KI-Erklärung as a sheet over the question (no scrolling of the page)
+#[component]
+pub fn ExplainSheet(qid: u32, correct: bool, on_close: EventHandler<()>) -> Element {
+    let Some(ex) = question(qid).and_then(|q| q.explanation.clone()) else {
+        return rsx! {};
+    };
+    let cheer = CHEERS[qid as usize % CHEERS.len()];
+    let title_class = if correct { "ex-title ok" } else { "ex-title" };
+    rsx! {
+        div { class: "sheet-backdrop top", onclick: move |_| on_close.call(()),
+            div { class: "sheet explain-sheet", onclick: move |e| e.stop_propagation(),
+                div { class: "sheet-head",
+                    h2 { class: title_class,
+                        Icon { name: "bulb" }
+                        if correct { "{cheer}" } else { "KI-Erklärung" }
+                    }
+                    button { class: "iconbtn", "aria-label": "Schließen", onclick: move |_| on_close.call(()), Icon { name: "close" } }
+                }
+                p { class: "ex-why", {ex.why} }
+                if let Some(tip) = ex.tip {
+                    div { class: "ex-box",
+                        h3 { "Merkhilfe" }
+                        p { {tip} }
+                    }
+                }
+                if let Some(twin) = ex.twin {
+                    div { class: "ex-box",
+                        h3 { "Verwechslungsgefahr" }
+                        p { {twin} }
+                    }
+                }
+                button { class: "btn wide", onclick: move |_| on_close.call(()), "Schließen" }
             }
         }
     }

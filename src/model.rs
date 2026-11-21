@@ -124,6 +124,30 @@ pub struct SurpriseRecord {
     pub streak: u32,
 }
 
+/// Practice exam: random questions, answers chosen freely (and changeable)
+/// until it is handed in; no feedback before that.
+#[derive(Serialize, Deserialize, Clone, PartialEq, Debug)]
+pub struct ExamState {
+    pub size: u32,
+    pub ids: Vec<u32>,
+    /// chosen answer per question, index into its shuffled answers
+    pub answers: Vec<Option<u8>>,
+    /// fixes the answer order for the whole exam (also after a restart)
+    pub seed: u32,
+    #[serde(default)]
+    pub current: u32,
+    pub started: String,
+    #[serde(default)]
+    pub finished: bool,
+}
+
+#[derive(Serialize, Deserialize, Clone, PartialEq, Debug)]
+pub struct ExamResult {
+    pub date: String,
+    pub size: u32,
+    pub correct: u32,
+}
+
 #[derive(Serialize, Deserialize, Clone, PartialEq, Debug, Default)]
 #[serde(rename_all = "camelCase")]
 pub struct SubjectProgress {
@@ -145,6 +169,12 @@ pub struct SubjectProgress {
     pub wrong_count: BTreeMap<u32, u32>,
     #[serde(default)]
     pub surprises: BTreeMap<u32, SurpriseRecord>,
+    /// running or finished practice exam ("Test")
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub exam: Option<ExamState>,
+    /// results of finished exams, newest last
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub exam_history: Vec<ExamResult>,
     /// old "Lernen" mode of the web app, kept untouched for round-trips
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub drill: Option<serde_json::Value>,
@@ -177,6 +207,7 @@ pub enum Mode {
     Favorites,
     FavoritesDrill,
     UltraHard,
+    Exam,
 }
 
 impl SubjectProgress {

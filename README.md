@@ -13,6 +13,12 @@ per Export/Import in den Einstellungen.
   Abstand wieder (30 min → 2 h → 8 h → 1 Tag → 2 Tage …).
 - **Liste** mit Nummernleiste, Sprung zu jeder Frage, Pfeiltasten am Desktop.
 - **Fehler**, **Markiert**, **Markiert lernen** (in Runden), **Ultra schwer**.
+- **Test** (Prüfung simulieren): 12 oder 16 zufällige Fragen, ohne Zeitlimit, bestanden ab
+  75 % (9/12 bzw. 12/16). Auflösung erst nach dem Abgeben, Antworten bis dahin änderbar.
+  Danach Auswertung pro Frage mit KI-Erklärung, „Falsche markieren“ und Verlauf der letzten
+  Tests. Ein laufender Test bleibt beim Schließen der App erhalten. Falsche/unbeantwortete
+  Fragen zählen als Fehlversuch (für Überraschungsfragen), der Richtig/Falsch-Stand der
+  anderen Modi bleibt unberührt.
 - Ähnliche Fragen: Unterschiede markiert, in Tests ausgeblendet.
 - KI-Erklärung, Merkhilfe und Verwechslungsgefahr nach der Antwort über das Glühbirnen-Icon oben an der Frage (öffnet ein Fenster, kein Scrollen).
 - **Stand übertragen** zwischen Geräten, ohne Server: Teilen (Link + Code), Code kopieren
@@ -100,6 +106,8 @@ Liegt die Seite anderswo in einem Unterordner, vorher in `Dioxus.toml` unter `[w
   Flugmodus. Ein WLAN mit Login-Seite (Flugzeug, Hotel) kann die App nicht überschreiben.
   Unter **Einstellungen → Offline** steht, ob alles da ist („Offline bereit“).
   Am besten vor dem Flug einmal mit Internet öffnen: So kommen auch Updates aufs Gerät.
+- **Updates:** Eine neue Version wird in den ersten Sekunden nach dem Start automatisch
+  übernommen. Später erscheint oben „Neue Version – tippen zum Laden“.
 
 ### Desktop (zum schnellen Testen)
 
@@ -115,6 +123,7 @@ dx serve --platform desktop
 | `src/logic.rs` | Blöcke, Tests, Wiederholungen, Überraschungsfragen |
 | `src/card.rs` | Fragekarte mit Antworten und Erklärung |
 | `src/main.rs` | Startseite, Modi, Liste, Block-Ansicht, Einstellungen |
+| `src/exam.rs` | Test-Modus: Auswahl, Prüfung, Auswertung |
 | `src/transfer.rs` | Stand übertragen: Code, Link, Datei, Bestätigung |
 | `src/util.rs` | Zeit, Zufall, Speicher (localStorage / Datei), App-Log |
 | `assets/style.css` | Design |

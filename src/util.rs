@@ -129,7 +129,12 @@ pub struct Shuffled {
 /// when the same question is repeated in a block.
 pub fn shuffle_answers(q: &Question, salt: u32) -> Shuffled {
     let hour = (now_ms() / 3_600_000.0).floor() as i64;
-    let mut seed: i64 = q.id as i64 + hour + salt as i64 * 7919;
+    shuffle_answers_seeded(q, hour + salt as i64 * 7919)
+}
+
+/// Same order for the same question and seed, every time.
+pub fn shuffle_answers_seeded(q: &Question, seed: i64) -> Shuffled {
+    let mut seed: i64 = q.id as i64 + seed;
     let mut order = [0usize, 1, 2, 3];
     let mut i = order.len();
     while i > 0 {

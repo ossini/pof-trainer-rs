@@ -1,6 +1,7 @@
 //! PoF Trainer – PPL Principles of Flight, offline on the phone.
 
 mod card;
+mod exam;
 mod icons;
 mod logic;
 mod model;
@@ -227,6 +228,22 @@ fn Home(on_open: EventHandler<Mode>, on_settings: EventHandler<()>, on_transfer:
         None => "Erster 10er-Block".to_string(),
     };
 
+    let exam_count = match &p.exam {
+        Some(e) if !e.finished => format!("{}/{}", e.answers.iter().filter(|a| a.is_some()).count(), e.size),
+        _ => String::new(),
+    };
+    let exam_sub = match (&p.exam, p.exam_history.last()) {
+        (Some(e), _) if !e.finished => "Test läuft – weitermachen".to_string(),
+        (_, Some(r)) => format!(
+            "Zuletzt {} von {} · {}",
+            r.correct,
+            r.size,
+            if exam::passed(r.correct, r.size) { "bestanden" } else { "nicht bestanden" }
+        ),
+        _ => "12 oder 16 Fragen · ab 75 % bestanden".to_string(),
+    };
+    let exam_row: (Mode, &'static str, &'static str, String, String) = (Mode::Exam, "test", "Prüfung simulieren", exam_sub, exam_count);
+
     let rows: [(Mode, &'static str, &'static str, &'static str, String); 5] = [
         (Mode::List, "list", "Liste", "Alle Fragen der Reihe nach", format!("{answered}/{total}")),
         (Mode::Errors, "alert", "Fehler", "Falsch beantwortete Fragen", wrong.to_string()),
@@ -289,6 +306,24 @@ fn Home(on_open: EventHandler<Mode>, on_settings: EventHandler<()>, on_transfer:
             }
 
             div { class: "list",
+                for (mode, icon, title, sub, count) in std::iter::once(exam_row) {
+                    button {
+                        class: "list-row",
+                        onclick: move |_| on_open.call(mode),
+                        span { class: "row-icon", Icon { name: icon } }
+                        span { class: "row-text",
+                            span { class: "row-title", "{title}" }
+                            span { class: "row-sub", {sub} }
+                        }
+                        if !count.is_empty() {
+                            span { class: "row-count", "{count}" }
+                        }
+                        span { class: "chev", Icon { name: "next" } }
+                    }
+                }
+            }
+
+            div { class: "list",
                 button { class: "list-row", onclick: move |_| on_transfer.call(()),
                     span { class: "row-icon", Icon { name: "upload" } }
                     span { class: "row-text",
@@ -322,12 +357,13 @@ fn Learn(mode: Mode, on_mode: EventHandler<Mode>, on_back: EventHandler<()>, on_
             _ => "count",
         }
     };
-    let tabs: [(Mode, &'static str, &'static str, usize); 5] = [
+    let tabs: [(Mode, &'static str, &'static str, usize); 6] = [
         (Mode::Blocks, "layers", "Alle", 0),
         (Mode::Errors, "alert", "Fehler", errors),
         (Mode::Favorites, "bookmark", "Markiert", fav),
         (Mode::FavoritesDrill, "repeat", "Markiert lernen", 0),
         (Mode::UltraHard, "gem", "Ultra", ultra),
+        (Mode::Exam, "test", "Test", 0),
     ];
 
     rsx! {
@@ -369,6 +405,11 @@ fn Learn(mode: Mode, on_mode: EventHandler<Mode>, on_back: EventHandler<()>, on_
             Mode::FavoritesDrill => rsx! {
                 for k in std::iter::once(format!("fav-{gen}")) {
                     DrillView { key: "{k}", variant: Variant::Favorites }
+                }
+            },
+            Mode::Exam => rsx! {
+                for k in std::iter::once(format!("exam-{gen}")) {
+                    exam::ExamView { key: "{k}" }
                 }
             },
             m => rsx! {

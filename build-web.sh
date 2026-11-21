@@ -25,12 +25,33 @@ head = """
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="PoF">
-    <meta name="theme-color" content="#070b14">
+    <meta name="theme-color" content="#111317">
     <link rel="manifest" href="manifest.webmanifest">
     <link rel="apple-touch-icon" href="icon-180.png">
     <link rel="icon" type="image/png" href="icon-192.png">
-    <style>html,body{background:#070b14}</style>
-    <script>if ('serviceWorker' in navigator) addEventListener('load', () => navigator.serviceWorker.register('sw.js'));</script>
+    <style>html,body{background:#111317}</style>
+    <script>
+    // Offline cache + updates: a new version takes over by itself right after
+    // start; later on, a button offers the reload (never mid-question).
+    if ('serviceWorker' in navigator) {
+      const t0 = Date.now();
+      const hadController = !!navigator.serviceWorker.controller;
+      let done = false;
+      navigator.serviceWorker.addEventListener('controllerchange', () => {
+        if (!hadController || done) return;
+        done = true;
+        if (Date.now() - t0 < 15000) { location.reload(); return; }
+        const b = document.createElement('button');
+        b.textContent = 'Neue Version – tippen zum Laden';
+        b.style.cssText = 'position:fixed;left:50%;transform:translateX(-50%);top:calc(env(safe-area-inset-top) + 8px);z-index:99;padding:10px 16px;border:0;border-radius:999px;background:#6aa1ff;color:#0b1220;font:600 14px -apple-system,system-ui,sans-serif;box-shadow:0 4px 16px rgba(0,0,0,.3)';
+        b.onclick = () => location.reload();
+        document.body.appendChild(b);
+      });
+      addEventListener('load', () => navigator.serviceWorker.register('sw.js').then((reg) => {
+        document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') reg.update(); });
+      }));
+    }
+    </script>
 """
 if "apple-mobile-web-app-capable" not in html:
     html = html.replace("</head>", head + "</head>", 1)

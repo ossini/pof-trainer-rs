@@ -79,7 +79,7 @@ pub fn take_link_code() -> Option<AppProgress> {
     }
 }
 
-fn ago(iso: &str) -> Option<String> {
+pub fn ago(iso: &str) -> Option<String> {
     let t = ms_from_iso(iso)?;
     let m = ((now_ms() - t) / 60_000.0).max(0.0) as u64;
     Some(match m {
