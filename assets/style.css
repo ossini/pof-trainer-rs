@@ -297,20 +297,16 @@ mark.diff { color: inherit; background: color-mix(in srgb, var(--mark) 22%, tran
 .ans.is-wrong .letter { background: var(--bad); color: #fff; }
 .ans.is-dim { opacity: 0.45; }
 
-.explain {
-  margin-top: 14px;
-  padding: 14px;
-  border-radius: 12px;
-  font-size: 15px;
-  line-height: 1.55;
-  background: var(--surface);
-  border: 1px solid var(--line);
-}
-.explain p { margin: 0; }
-.ex-title { display: flex; align-items: center; gap: 6px; font-weight: 600; font-size: 14px; margin-bottom: 6px; color: var(--muted); }
-.explain.ok .ex-title { color: var(--ok); }
-.ex-box { display: flex; gap: 8px; margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--line); }
-.ex-box .ic { margin-top: 3px; color: var(--muted); }
+.iconbtn.explain-btn { color: var(--accent); background: color-mix(in srgb, var(--accent) var(--tint), transparent); }
+.explain-sheet { font-size: 16px; line-height: 1.55; }
+.explain-sheet .ex-title { display: flex; align-items: center; gap: 8px; }
+.explain-sheet .ex-title .ic { color: var(--accent); }
+.explain-sheet .ex-title.ok, .explain-sheet .ex-title.ok .ic { color: var(--ok); }
+.ex-why { margin: 4px 0 0; overflow-wrap: anywhere; }
+.ex-box { margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--line); }
+.ex-box h3 { margin: 0 0 4px; }
+.ex-box p { margin: 0; overflow-wrap: anywhere; }
+.explain-sheet > .btn { margin-top: 18px; }
 
 /* ----------------------------------------------------------------- buttons */
 

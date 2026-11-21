@@ -14,7 +14,7 @@ per Export/Import in den Einstellungen.
 - **Liste** mit Nummernleiste, Sprung zu jeder Frage, Pfeiltasten am Desktop.
 - **Fehler**, **Markiert**, **Markiert lernen** (in Runden), **Ultra schwer**.
 - Ähnliche Fragen: Unterschiede markiert, in Tests ausgeblendet.
-- Erklärung, Merkhilfe und Verwechslungsgefahr nach jeder Antwort.
+- KI-Erklärung, Merkhilfe und Verwechslungsgefahr nach der Antwort über das Glühbirnen-Icon oben an der Frage (öffnet ein Fenster, kein Scrollen).
 - **Stand übertragen** zwischen Geräten, ohne Server: Teilen (Link + Code), Code kopieren
   und auf dem anderen Gerät einfügen, oder als JSON-Datei (gleiches Format wie die Web-App).
   Vor dem Übernehmen zeigt die App beide Stände nebeneinander.

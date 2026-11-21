@@ -61,6 +61,7 @@ pub fn QuestionCard(
     let app = use_app();
     let shuffled = use_hook(move || question(qid).map(|q| shuffle_answers(q, salt)));
     let mut selected = use_signal(|| None::<usize>);
+    let mut show_explain = use_signal(|| false);
 
     let (Some(q), Some(sh)) = (question(qid), shuffled) else {
         return rsx! {};
@@ -107,6 +108,16 @@ pub fn QuestionCard(
                 }}
                 }
                 div { class: "qactions",
+                // explanation behind an icon (only once answered, so it never spoils)
+                if reveal && q.explanation.is_some() {
+                    button {
+                        class: "iconbtn explain-btn",
+                        title: "KI-Erklärung",
+                        "aria-label": "KI-Erklärung anzeigen",
+                        onclick: move |_| show_explain.set(true),
+                        Icon { name: "bulb" }
+                    }
+                }
                 button {
                     class: if is_ultra { "iconbtn ultra on" } else { "iconbtn ultra" },
                     title: "ULTRA SCHWER",
@@ -175,29 +186,31 @@ pub fn QuestionCard(
                 }
             }
 
-            if reveal {
+            if show_explain() {
                 if let Some(ex) = q.explanation.clone() {
-                    div { class: if correct_now == Some(true) { "explain ok" } else { "explain" },
-                        div { class: "ex-title",
-                            Icon { name: "sparkles" }
-                            if correct_now == Some(true) {
-                                "{cheer} Hier nochmal warum:"
-                            } else {
-                                "KI-Erklärung"
+                    div { class: "sheet-backdrop", onclick: move |_| show_explain.set(false),
+                        div { class: "sheet explain-sheet", onclick: move |e| e.stop_propagation(),
+                            div { class: "sheet-head",
+                                h2 { class: if correct_now == Some(true) { "ex-title ok" } else { "ex-title" },
+                                    Icon { name: "bulb" }
+                                    if correct_now == Some(true) { "{cheer}" } else { "KI-Erklärung" }
+                                }
+                                button { class: "iconbtn", "aria-label": "Schließen", onclick: move |_| show_explain.set(false), Icon { name: "close" } }
                             }
-                        }
-                        p { {ex.why} }
-                        if let Some(tip) = ex.tip {
-                            div { class: "ex-box tip",
-                                Icon { name: "bulb" }
-                                p { b { "Merkhilfe: " } {tip} }
+                            p { class: "ex-why", {ex.why} }
+                            if let Some(tip) = ex.tip {
+                                div { class: "ex-box",
+                                    h3 { "Merkhilfe" }
+                                    p { {tip} }
+                                }
                             }
-                        }
-                        if let Some(twin) = ex.twin {
-                            div { class: "ex-box twin",
-                                Icon { name: "compare" }
-                                p { b { "Verwechslungsgefahr: " } {twin} }
+                            if let Some(twin) = ex.twin {
+                                div { class: "ex-box",
+                                    h3 { "Verwechslungsgefahr" }
+                                    p { {twin} }
+                                }
                             }
+                            button { class: "btn wide", onclick: move |_| show_explain.set(false), "Schließen" }
                         }
                     }
                 }
