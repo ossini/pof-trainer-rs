@@ -209,6 +209,8 @@ pub enum Mode {
     UltraHard,
     Exam,
     Search,
+    /// fixed set PL080-0408 … 0416, endless and shuffled
+    Focus,
 }
 
 impl SubjectProgress {

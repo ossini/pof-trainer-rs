@@ -2,6 +2,7 @@
 
 mod card;
 mod exam;
+mod focus;
 mod icons;
 mod logic;
 mod model;
@@ -271,6 +272,8 @@ fn Home(on_open: EventHandler<Mode>, on_settings: EventHandler<()>, on_transfer:
     };
     let exam_row: (Mode, &'static str, &'static str, String, String) = (Mode::Exam, "test", "Prüfung simulieren", exam_sub, exam_count);
 
+    let focus_count = focus::focus_ids().len();
+
     let rows: [(Mode, &'static str, &'static str, &'static str, String); 5] = [
         (Mode::List, "list", "Liste", "Alle Fragen der Reihe nach", format!("{answered}/{total}")),
         (Mode::Errors, "alert", "Fehler", "Falsch beantwortete Fragen", wrong.to_string()),
@@ -351,6 +354,18 @@ fn Home(on_open: EventHandler<Mode>, on_settings: EventHandler<()>, on_transfer:
             }
 
             div { class: "list",
+                button { class: "list-row", onclick: move |_| on_open.call(Mode::Focus),
+                    span { class: "row-icon", Icon { name: "plane" } }
+                    span { class: "row-text",
+                        span { class: "row-title", {focus::TITLE} }
+                        span { class: "row-sub", "{focus::RANGE_LABEL} · gewürfelt, endlos" }
+                    }
+                    span { class: "row-count", "{focus_count}" }
+                    span { class: "chev", Icon { name: "next" } }
+                }
+            }
+
+            div { class: "list",
                 button { class: "list-row", onclick: move |_| on_open.call(Mode::Search),
                     span { class: "row-icon", Icon { name: "search" } }
                     span { class: "row-text",
@@ -395,13 +410,14 @@ fn Learn(mode: Mode, on_mode: EventHandler<Mode>, on_back: EventHandler<()>, on_
             _ => "count",
         }
     };
-    let tabs: [(Mode, &'static str, &'static str, usize); 7] = [
+    let tabs: [(Mode, &'static str, &'static str, usize); 8] = [
         (Mode::Blocks, "layers", "Alle", 0),
         (Mode::Errors, "alert", "Fehler", errors),
         (Mode::Favorites, "bookmark", "Markiert", fav),
         (Mode::FavoritesDrill, "repeat", "Markiert lernen", 0),
         (Mode::UltraHard, "gem", "Ultra", ultra),
         (Mode::Exam, "test", "Test", 0),
+        (Mode::Focus, "plane", focus::TITLE, 0),
         (Mode::Search, "search", "Suche", 0),
     ];
 
@@ -452,6 +468,11 @@ fn Learn(mode: Mode, on_mode: EventHandler<Mode>, on_back: EventHandler<()>, on_
                 }
             },
             Mode::Search => rsx! { search::SearchView {} },
+            Mode::Focus => rsx! {
+                for k in std::iter::once(format!("focus-{gen}")) {
+                    focus::FocusView { key: "{k}" }
+                }
+            },
             m => rsx! {
                 for k in std::iter::once(format!("{m:?}-{gen}")) {
                     ListView { key: "{k}", mode: m }
