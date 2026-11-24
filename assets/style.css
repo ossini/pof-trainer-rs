@@ -506,3 +506,34 @@ mark.diff { color: inherit; background: color-mix(in srgb, var(--mark) 22%, tran
 .review-body .qbody { font-size: 16px; margin-bottom: 10px; }
 .review-body .ans { cursor: default; }
 .explain-open { margin-top: 10px; }
+
+/* ------------------------------------------------------------- search mode */
+
+.searchbox {
+  position: sticky;
+  top: calc(env(safe-area-inset-top) + 57px);
+  z-index: 5;
+  display: flex; align-items: center; gap: 8px;
+  padding: 4px 4px 4px 12px;
+  border-radius: 12px;
+  border: 1.5px solid var(--line);
+  background: var(--surface);
+  box-shadow: 0 6px 12px -8px var(--bg);
+}
+.searchbox:focus-within { border-color: var(--accent); }
+.searchbox > .ic { color: var(--muted); width: 18px; height: 18px; }
+.searchbox input {
+  flex: 1; min-width: 0;
+  min-height: 40px;
+  border: none; outline: none;
+  background: transparent;
+  font-size: 16px; /* < 16px makes iOS zoom in */
+}
+.searchbox input::-webkit-search-cancel-button { display: none; }
+.search-hint { margin: 12px 4px; }
+.hit-card { padding: 4px 14px 14px; margin-bottom: 12px; }
+.hit-card .qbody { font-size: 16px; margin-bottom: 12px; overflow-wrap: anywhere; }
+.hit-card .ans { cursor: default; }
+.hit-card .letter .ic { width: 15px; height: 15px; }
+mark.hit { color: inherit; background: color-mix(in srgb, var(--mark) 35%, transparent); border-radius: 3px; padding: 0 1px; }
+.btn.more { margin-top: 4px; }

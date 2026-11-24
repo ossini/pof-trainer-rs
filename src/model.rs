@@ -208,6 +208,7 @@ pub enum Mode {
     FavoritesDrill,
     UltraHard,
     Exam,
+    Search,
 }
 
 impl SubjectProgress {

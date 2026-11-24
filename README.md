@@ -19,6 +19,9 @@ per Export/Import in den Einstellungen.
   Tests. Ein laufender Test bleibt beim Schließen der App erhalten. Falsche/unbeantwortete
   Fragen zählen als Fehlversuch (für Überraschungsfragen), der Richtig/Falsch-Stand der
   anderen Modi bleibt unberührt.
+- **Suche** (zum Nachschlagen): Suchfeld durchsucht Fragetext, Antworten und CAA-Nummer,
+  Groß-/Kleinschreibung egal. Treffer erscheinen sofort mit allen Antworten, die richtige
+  grün, der Suchbegriff markiert. Ändert den Lernstand nicht.
 - Ähnliche Fragen: Unterschiede markiert, in Tests ausgeblendet.
 - KI-Erklärung, Merkhilfe und Verwechslungsgefahr nach der Antwort über das Glühbirnen-Icon oben an der Frage (öffnet ein Fenster, kein Scrollen).
 - **Stand übertragen** zwischen Geräten, ohne Server: Teilen (Link + Code), Code kopieren

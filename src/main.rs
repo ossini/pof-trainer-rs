@@ -5,6 +5,7 @@ mod exam;
 mod icons;
 mod logic;
 mod model;
+mod search;
 mod transfer;
 mod util;
 
@@ -324,6 +325,17 @@ fn Home(on_open: EventHandler<Mode>, on_settings: EventHandler<()>, on_transfer:
             }
 
             div { class: "list",
+                button { class: "list-row", onclick: move |_| on_open.call(Mode::Search),
+                    span { class: "row-icon", Icon { name: "search" } }
+                    span { class: "row-text",
+                        span { class: "row-title", "Suche" }
+                        span { class: "row-sub", "Fragen und Antworten nachschlagen" }
+                    }
+                    span { class: "chev", Icon { name: "next" } }
+                }
+            }
+
+            div { class: "list",
                 button { class: "list-row", onclick: move |_| on_transfer.call(()),
                     span { class: "row-icon", Icon { name: "upload" } }
                     span { class: "row-text",
@@ -357,13 +369,14 @@ fn Learn(mode: Mode, on_mode: EventHandler<Mode>, on_back: EventHandler<()>, on_
             _ => "count",
         }
     };
-    let tabs: [(Mode, &'static str, &'static str, usize); 6] = [
+    let tabs: [(Mode, &'static str, &'static str, usize); 7] = [
         (Mode::Blocks, "layers", "Alle", 0),
         (Mode::Errors, "alert", "Fehler", errors),
         (Mode::Favorites, "bookmark", "Markiert", fav),
         (Mode::FavoritesDrill, "repeat", "Markiert lernen", 0),
         (Mode::UltraHard, "gem", "Ultra", ultra),
         (Mode::Exam, "test", "Test", 0),
+        (Mode::Search, "search", "Suche", 0),
     ];
 
     rsx! {
@@ -412,6 +425,7 @@ fn Learn(mode: Mode, on_mode: EventHandler<Mode>, on_back: EventHandler<()>, on_
                     exam::ExamView { key: "{k}" }
                 }
             },
+            Mode::Search => rsx! { search::SearchView {} },
             m => rsx! {
                 for k in std::iter::once(format!("{m:?}-{gen}")) {
                     ListView { key: "{k}", mode: m }

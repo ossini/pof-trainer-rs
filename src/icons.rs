@@ -33,6 +33,7 @@ fn paths(name: &str) -> &'static str {
         "gem" => r#"<path d="M6 3h12l4 6-10 13L2 9z"/><path d="M11 3 8 9l4 13 4-13-3-6M2 9h20"/>"#,
         "gem-fill" => r#"<path fill="currentColor" fill-opacity=".25" d="M6 3h12l4 6-10 13L2 9z"/><path d="M11 3 8 9l4 13 4-13-3-6M2 9h20"/>"#,
         "phone" => r#"<rect x="5" y="2" width="14" height="20" rx="2"/><path d="M12 18h.01"/>"#,
+        "search" => r#"<circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/>"#,
         "close" => r#"<path d="M18 6 6 18M6 6l12 12"/>"#,
         _ => "",
     }
