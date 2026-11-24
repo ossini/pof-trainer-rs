@@ -199,11 +199,7 @@ pub fn QuestionCard(
                         onmounted: move |e: MountedEvent| async move {
                             let _ = e.data().set_focus(true).await;
                         },
-                        onkeydown: move |e: KeyboardEvent| {
-                            if e.key() == Key::ArrowRight {
-                                next.call(());
-                            }
-                        },
+                        "data-nav": "next",
                         onclick: move |_| next.call(()),
                         "{next_label}"
                         Icon { name: "next" }

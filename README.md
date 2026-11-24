@@ -11,7 +11,9 @@ per Export/Import in den Einstellungen.
   Nur ein bestandener Test zählt als richtig.
 - **Überraschungsfragen**: Oft falsch beantwortete Fragen (lila) kommen mit wachsendem
   Abstand wieder (30 min → 2 h → 8 h → 1 Tag → 2 Tage …).
-- **Liste** mit Nummernleiste, Sprung zu jeder Frage, Pfeiltasten am Desktop.
+- **Liste** mit Nummernleiste, Sprung zu jeder Frage.
+- **Pfeiltasten** ← / → am Desktop: vorherige / nächste Frage in Liste, Fehler, Markiert,
+  Ultra schwer und Test; → drückt in den Blöcken „Weiter“ bzw. „Nächster Block“.
 - **Fehler**, **Markiert**, **Markiert lernen** (in Runden), **Ultra schwer**.
 - **Test** (Prüfung simulieren): 12 oder 16 zufällige Fragen, ohne Zeitlimit, bestanden ab
   75 % (9/12 bzw. 12/16). Auflösung erst nach dem Abgeben, Antworten bis dahin änderbar.

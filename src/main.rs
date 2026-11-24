@@ -19,6 +19,26 @@ use util::{applog, applog::log, store};
 
 const CSS: Asset = asset!("/assets/style.css");
 const STORAGE_KEY: &str = "pof-trainer-progress";
+/// Global listener, so the keys work wherever the focus is (also after a
+/// click on the number strip). Ignored while typing, with modifier keys and
+/// while a sheet (settings, explanation …) is open.
+const ARROW_KEYS_JS: &str = r#"
+if (!window.__pofArrowKeys) {
+  window.__pofArrowKeys = true;
+  document.addEventListener('keydown', (e) => {
+    if (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') return;
+    if (e.altKey || e.ctrlKey || e.metaKey || e.shiftKey) return;
+    const t = e.target;
+    if (t && (t.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(t.tagName))) return;
+    if (document.querySelector('.sheet-backdrop')) return;
+    const dir = e.key === 'ArrowLeft' ? 'prev' : 'next';
+    const btn = document.querySelector(`[data-nav="${dir}"]:not(:disabled)`);
+    if (!btn) return;
+    e.preventDefault();
+    btn.click();
+  });
+}
+"#;
 const SEED: &str = include_str!("../data/seed-progress.json");
 
 fn main() {
@@ -147,6 +167,12 @@ fn App() -> Element {
     // Ask the browser not to evict the saved progress
     use_hook(|| {
         document::eval("navigator.storage && navigator.storage.persist && navigator.storage.persist()");
+    });
+
+    // Arrow keys ← / → switch questions in every view: they press the
+    // visible button marked `data-nav="prev"` / `data-nav="next"`.
+    use_hook(|| {
+        document::eval(ARROW_KEYS_JS);
     });
 
     let theme = app.read().theme.clone();
@@ -526,14 +552,6 @@ fn ListView(mode: Mode) -> Element {
 
     rsx! {
         div { class: "page learn",
-            tabindex: "-1",
-            onkeydown: move |e: KeyboardEvent| {
-                if e.key() == Key::ArrowLeft && i > 0 {
-                    set_index(app, local, mode, i - 1);
-                } else if e.key() == Key::ArrowRight && i + 1 < len {
-                    set_index(app, local, mode, i + 1);
-                }
-            },
             // fresh card (no old selection / answer order) for every question
             for k in std::iter::once(card_key) {
                 QuestionCard {
@@ -549,9 +567,9 @@ fn ListView(mode: Mode) -> Element {
         }
         footer { class: "strip-bar",
             div { class: "strip-nav",
-                button { class: "btn ghost", disabled: i == 0, onclick: move |_| set_index(app, local, mode, i - 1), Icon { name: "back" } "Zurück" }
+                button { class: "btn ghost", "data-nav": "prev", disabled: i == 0, onclick: move |_| set_index(app, local, mode, i - 1), Icon { name: "back" } "Zurück" }
                 span { class: "mono pos", "{pos} / {len}" }
-                button { class: "btn ghost", disabled: i + 1 >= len, onclick: move |_| set_index(app, local, mode, i + 1), "Weiter" Icon { name: "next" } }
+                button { class: "btn ghost", "data-nav": "next", disabled: i + 1 >= len, onclick: move |_| set_index(app, local, mode, i + 1), "Weiter" Icon { name: "next" } }
             }
             div { class: "strip",
                 for (n, id, label) in ids.iter().copied().enumerate().map(|(n, id)| (n, id, n + 1)) {
@@ -663,6 +681,7 @@ fn DrillView(variant: Variant) -> Element {
                     p { "{learned_text}{rest_text}" }
                     button {
                         class: "btn primary big",
+                        "data-nav": "next",
                         onmounted: move |e: MountedEvent| async move { let _ = e.data().set_focus(true).await; },
                         onclick: next_block,
                         "Nächster Block"

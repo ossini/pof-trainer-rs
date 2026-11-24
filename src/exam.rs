@@ -273,12 +273,12 @@ fn ExamRun(exam: ExamState) -> Element {
 
         footer { class: "strip-bar",
             div { class: "strip-nav",
-                button { class: "btn ghost", disabled: i == 0, onclick: move |_| go(i - 1), Icon { name: "back" } "Zurück" }
+                button { class: "btn ghost", "data-nav": "prev", disabled: i == 0, onclick: move |_| go(i - 1), Icon { name: "back" } "Zurück" }
                 span { class: "mono pos", "{pos} / {size}" }
                 if last {
                     button { class: "btn primary", onclick: move |_| confirm.set(Some("submit")), "Abgeben" }
                 } else {
-                    button { class: "btn ghost", onclick: move |_| go(i + 1), "Weiter" Icon { name: "next" } }
+                    button { class: "btn ghost", "data-nav": "next", onclick: move |_| go(i + 1), "Weiter" Icon { name: "next" } }
                 }
             }
             div { class: "strip",
